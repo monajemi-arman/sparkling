@@ -1,0 +1,42 @@
+version: "3.8"
+services:
+  backend:
+    build:
+      context: Sparkling.Backend
+    ports:
+      - "5128:5128"
+    volumes:
+      - db_data:/app/data
+    networks:
+      - appnet
+    working_dir: /app
+    user: app
+    command: >
+      /bin/sh -c "
+      export ASPNETCORE_URLS=\"http://*:5128\";
+      cd /app && touch /app/data/mydb.db && ln -s /app/data/mydb.db /app/mydb.db; dotnet Sparkling.Backend.dll
+      "
+
+  frontend:
+    build:
+      context: sparkling-frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    command: >
+      /bin/sh -c "nginx -g 'daemon off;'"
+    volumes:
+      - ./sparkling-frontend/fullchain.pem:/fullchain.pem
+      - ./sparkling-frontend/privkey.pem:/privkey.pem
+      - ./sparkling-frontend/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
+
+volumes:
+  db_data:
