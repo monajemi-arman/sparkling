@@ -3,6 +3,7 @@
 import * as React from "react";
 import {useContext, useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
+import { FiHome, FiUsers, FiList, FiUser, FiServer, FiClipboard, FiGrid, FiUserCheck } from "react-icons/fi";
 
 import {
     Sidebar,
@@ -19,13 +20,22 @@ import {
 import {TokenContext} from "@/app/context/TokenProvider";
 import {UserAccount} from "@/components/user-account";
 
+const homeNav = [
+    {
+        title: "Home",
+        url: "/dashboard",
+        icon: <FiHome size={18} />,
+        isActive: false,
+    },
+];
+
 const adminNav = [
     {
         title: "Administrative Panel",
         url: "#",
         items: [
-            {title: "Node List", url: "#node-list", isActive: false},
-            {title: "User Management", url: "#user-management", isActive: false},
+            {title: "Node List", url: "#node-list", icon: <FiGrid size={18} />, isActive: false},
+            {title: "User Management", url: "#user-management", icon: <FiUserCheck size={18} />, isActive: false},
         ],
     },
 ];
@@ -34,7 +44,9 @@ const userNav = [
     {
         title: "User Panel",
         url: "#",
-        items: [{title: "Work List", url: "#work-list", isActive: false}],
+        items: [
+            {title: "Work List", url: "#work-list", icon: <FiClipboard size={18} />, isActive: false},
+        ],
     },
 ];
 
@@ -79,6 +91,32 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
 
             <SidebarContent>
+                {/* Home Button */}
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={false}>
+                            <a
+                                href={homeNav[0].url}
+                                className="sidebar-link"
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.75em",
+                                    padding: "0.5em 0.75em",
+                                    fontSize: "1rem",
+                                    borderRadius: "6px",
+                                    transition: "background 0.2s",
+                                }}
+                            >
+                                <span>{homeNav[0].icon}</span>
+                                <span>{homeNav[0].title}</span>
+                            </a>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+                <hr style={{margin: "1em 0", border: "none", borderTop: "1px solid #eee"}} />
+
+                {/* Navigation Groups */}
                 {navMain.map((group) => (
                     <SidebarGroup key={group.title}>
                         <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
@@ -87,7 +125,22 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                 {group.items.map((item) => (
                                     <SidebarMenuItem key={item.title}>
                                         <SidebarMenuButton asChild isActive={item.isActive}>
-                                            <a href={item.url}>{item.title}</a>
+                                            <a
+                                                href={item.url}
+                                                className="sidebar-link"
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.75em",
+                                                    padding: "0.5em 0.75em",
+                                                    fontSize: "1rem",
+                                                    borderRadius: "6px",
+                                                    transition: "background 0.2s",
+                                                }}
+                                            >
+                                                <span>{item.icon}</span>
+                                                <span>{item.title}</span>
+                                            </a>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
                                 ))}
