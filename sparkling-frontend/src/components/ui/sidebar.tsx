@@ -164,6 +164,11 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const [isClient, setIsClient] = React.useState(false)
+
+  React.useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   if (collapsible === "none") {
     return (
@@ -178,6 +183,10 @@ function Sidebar({
         {children}
       </div>
     )
+  }
+
+  if (!isClient) {
+    return null
   }
 
   if (isMobile) {
