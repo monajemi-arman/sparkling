@@ -1,0 +1,120 @@
+.helpPageContainer {
+  padding: 30px;
+  max-width: 1000px;
+  margin: 30px auto;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+.helpPageContainer h1 {
+  font-size: 2.5em;
+  color: #2c3e50;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 15px;
+}
+
+.helpPageContainer h2 {
+  font-size: 2em;
+  color: #34495e;
+  margin-top: 30px;
+  margin-bottom: 15px;
+}
+
+.helpPageContainer h3 {
+  font-size: 1.6em;
+  color: #34495e;
+  margin-top: 25px;
+  margin-bottom: 10px;
+}
+
+.helpPageContainer h4 {
+  font-size: 1.3em;
+  color: #34495e;
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+
+.helpPageContainer p {
+  margin-bottom: 15px;
+  font-size: 1.05em;
+}
+
+.helpPageContainer ul,
+.helpPageContainer ol {
+  margin-bottom: 15px;
+  padding-left: 25px;
+}
+
+.helpPageContainer li {
+  margin-bottom: 8px;
+}
+
+.helpPageContainer a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.helpPageContainer a:hover {
+  text-decoration: underline;
+}
+
+.helpPageContainer code {
+  background-color: #f4f4f4;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 0.9em;
+}
+
+.helpPageContainer pre {
+  background-color: #f4f4f4;
+  padding: 15px;
+  border-radius: 5px;
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+.helpPageContainer pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: 1em;
+}
+
+.helpPageContainer blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 15px;
+  color: #666;
+  margin: 15px 0;
+}
+
+.helpPageContainer table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.helpPageContainer th,
+.helpPageContainer td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.helpPageContainer th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.helpPageContainer img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 15px 0;
+  border-radius: 4px;
+}
