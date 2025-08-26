@@ -29,6 +29,14 @@ export default function Page() {
     const router = useRouter();
     const hash = useHash();
 
+    // State to manage the active hash for client-side rendering after hydration
+    const [activeHash, setActiveHash] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Update activeHash only on the client after the component mounts
+        setActiveHash(hash);
+    }, [hash]); // Re-run when the hash from useHash changes
+
     const {
         data: workList
     } = useSWR(accessToken && admin ? 'works' : null, () => getWorks(accessToken!));
@@ -78,7 +86,8 @@ export default function Page() {
                         className="mr-2 data-[orientation=vertical]:h-4"
                     />
                 </header>
-                {(!hash || hash === "#") && (
+                {/* Render default dashboard content if no hash or hash is empty/root */}
+                {(!activeHash || activeHash === "#") && (
                     <div className="flex grow items-center justify-center px-4">
                         <div className="bg-white shadow-xl rounded-2xl p-8 max-w-2xl w-full text-center">
                             <h1 className="text-4xl font-bold text-gray-800 mb-4">
@@ -150,10 +159,10 @@ export default function Page() {
                         </div>
                     </div>
                 )}
-                {hash == "#work-list" && workList && Array.isArray(workList) && <WorkList workList={workList}/>}
-                {hash == "#node-list" && admin && nodeList && Array.isArray(nodeList) &&
+                {activeHash == "#work-list" && workList && Array.isArray(workList) && <WorkList workList={workList}/>}
+                {activeHash == "#node-list" && admin && nodeList && Array.isArray(nodeList) &&
                     <NodeList nodeList={nodeList}/>}
-                {hash == "#user-management" && admin && userList && Array.isArray(userList) &&
+                {activeHash == "#user-management" && admin && userList && Array.isArray(userList) &&
                     <UserList userList={userList}/>}
             </SidebarInset>
         </SidebarProvider>
