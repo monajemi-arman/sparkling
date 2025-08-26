@@ -6,7 +6,7 @@ trap 'echo "Interrupted, stopping child processes…"; kill 0' SIGINT SIGTERM
 cd ./sparkling-frontend || exit
 npm run dev &
 
-cd ../Sparkling.Backend || exit
+cd ../sparkling-backend || exit
 dotnet run &
 
 wait
