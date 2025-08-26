@@ -66,3 +66,20 @@ export const deleteWork = async (accessToken: string | null | undefined, workId:
         return false;
     }
 }
+
+
+export async function getJupyterInfo(accessToken: string, workId: string) {
+    const res = await fetch(`${workEndpoint}/${workId}`, {
+        headers: {
+            "Content-type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+        },
+        method: "GET",
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return {
+        port: data.jupyterPort,
+        token: data.jupyterToken,
+    };
+}
