@@ -2,7 +2,7 @@ version: "3.8"
 services:
   backend:
     build:
-      context: Sparkling.Backend
+      context: sparkling-backend
     ports:
       - "5128:5128"
     volumes:
