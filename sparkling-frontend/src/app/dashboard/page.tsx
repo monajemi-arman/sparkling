@@ -18,7 +18,8 @@ import {useRouter} from "next/navigation";
 import useHash from "@/lib/useHash";
 import {getWorks} from "@/lib/works";
 import {WorkList} from "@/components/work-list";
-import {Briefcase, Server, Users} from "lucide-react";
+import {Briefcase, Server, Users, HelpCircle} from "lucide-react";
+import Help from "@/components/help";
 
 export default function Page() {
     const context = useContext(TokenContext);
@@ -29,13 +30,11 @@ export default function Page() {
     const router = useRouter();
     const hash = useHash();
 
-    // State to manage the active hash for client-side rendering after hydration
     const [activeHash, setActiveHash] = useState<string | null>(null);
 
     useEffect(() => {
-        // Update activeHash only on the client after the component mounts
         setActiveHash(hash);
-    }, [hash]); // Re-run when the hash from useHash changes
+    }, [hash]);
 
     const {
         data: workList
@@ -96,7 +95,7 @@ export default function Page() {
                             <p className="text-lg text-gray-600 mb-6">
                                 Manage users, nodes, and your work sessions with ease.
                             </p>
-                            <div className="flex flex-col gap-6 mt-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                                 <button
                                     className="flex items-center justify-center gap-4 bg-blue-600 hover:bg-blue-700 text-white text-xl font-semibold py-6 rounded-xl shadow transition"
                                     onClick={() => handleNav("#work-list")}
@@ -122,6 +121,13 @@ export default function Page() {
                                         User Management
                                     </button>
                                 )}
+                                <button
+                                    className="flex items-center justify-center gap-4 bg-gray-600 hover:bg-gray-700 text-white text-xl font-semibold py-6 rounded-xl shadow transition"
+                                    onClick={() => handleNav("#help")}
+                                >
+                                    <HelpCircle size={32} />
+                                    Help
+                                </button>
                             </div>
                             {/* Workflow Steps Card */}
                             <div className="mt-10 bg-gray-50 rounded-xl shadow-inner p-6 text-left">
@@ -164,6 +170,7 @@ export default function Page() {
                     <NodeList nodeList={nodeList}/>}
                 {activeHash == "#user-management" && admin && userList && Array.isArray(userList) &&
                     <UserList userList={userList}/>}
+                {activeHash == "#help" && <Help />}
             </SidebarInset>
         </SidebarProvider>
     );
