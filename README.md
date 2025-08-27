@@ -6,8 +6,9 @@ Sparkling is an easy-to-use Apache Spark setup and management platform. Written 
 *   📚 Jupyter notebook included
 *   🐳 Powered by Docker under-the-hood
 
----
+![screenshot](dashboard.png)
 
+---
 ## 🛠️ Requirements
 This software is meant for **Linux** based operating systems. If running on **Windows**, use **WSL Ubuntu** for best results. For running this project, only **Docker** is required. Install Docker from the official repository:
 ```bash
