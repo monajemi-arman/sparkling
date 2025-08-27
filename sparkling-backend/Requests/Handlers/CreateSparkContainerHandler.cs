@@ -2,6 +2,8 @@ using Docker.DotNet;
 using Docker.DotNet.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Sparkling.Backend.Configuration;
 using Sparkling.Backend.Controllers;
 using Sparkling.Backend.Exceptions;
 using Sparkling.Backend.Models;
@@ -9,9 +11,15 @@ using Sparkling.Backend.Services;
 
 namespace Sparkling.Backend.Requests.Handlers;
 
-public class CreateSparkContainerRequestHandler(SparklingDbContext sparklingDbContext, IMediator mediator, ILogService logService)
+public class CreateSparkContainerRequestHandler(
+    SparklingDbContext sparklingDbContext,
+    IMediator mediator,
+    ILogService logService,
+    IOptions<DockerImageSettings> dockerImageOptions)
     : IRequestHandler<CreateSparkContainerRequest, Container>
 {
+    private readonly DockerImageSettings _dockerImageSettings = dockerImageOptions.Value;
+
     public async Task<Container> Handle(CreateSparkContainerRequest request, CancellationToken cancellationToken)
     {
         var client = request.DockerClient;
@@ -23,7 +31,8 @@ public class CreateSparkContainerRequestHandler(SparklingDbContext sparklingDbCo
             );
 
             await client.Images.CreateImageAsync(new ImagesCreateParameters()
-                    { FromImage = "spark", Tag = "latest" }, new AuthConfig(), new Progress<JSONMessage>(),
+                    { FromImage = _dockerImageSettings.SparkImageName, Tag = _dockerImageSettings.SparkImageTag },
+                new AuthConfig(), new Progress<JSONMessage>(),
                 cancellationToken);
 
             logService.Broadcast(
@@ -48,9 +57,9 @@ public class CreateSparkContainerRequestHandler(SparklingDbContext sparklingDbCo
             {
                 CreationDateTime = DateTime.UtcNow,
                 Id = containerId,
-                ImageName = "spark",
+                ImageName = _dockerImageSettings.SparkImageName,
                 //TODO: put the latest SHA tag here
-                ImageTag = "latest",
+                ImageTag = _dockerImageSettings.SparkImageTag,
                 Ports = request.Node.IsLocal ? "7077,8080" : "8081",
                 Volumes = volumeResponse.Name,
                 Type = ContainerType.SparkNode,
@@ -84,7 +93,7 @@ public class CreateSparkContainerRequestHandler(SparklingDbContext sparklingDbCo
 
         await client.Containers.CreateContainerAsync(new CreateContainerParameters()
         {
-            Image = "spark:latest",
+            Image = _dockerImageSettings.Spark,
             Name = containerId.ToString(),
             Cmd =
             [
@@ -125,7 +134,7 @@ public class CreateSparkContainerRequestHandler(SparklingDbContext sparklingDbCo
 
         await client.Containers.CreateContainerAsync(new CreateContainerParameters()
         {
-            Image = "spark:latest",
+            Image = _dockerImageSettings.Spark,
             Name = containerId.ToString(),
             Cmd =
             [

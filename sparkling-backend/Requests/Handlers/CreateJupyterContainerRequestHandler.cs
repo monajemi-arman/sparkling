@@ -2,16 +2,23 @@ using Docker.DotNet;
 using Docker.DotNet.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
+using Sparkling.Backend.Configuration;
 using Sparkling.Backend.Exceptions;
 using Sparkling.Backend.Models;
 
 namespace Sparkling.Backend.Requests.Handlers;
 
-public class CreateJupyterContainerRequestHandler(IMediator mediator, SparklingDbContext sparklingDbContext)
+public class CreateJupyterContainerRequestHandler(
+    IMediator mediator,
+    SparklingDbContext sparklingDbContext,
+    IOptions<DockerImageSettings> dockerImageOptions)
     : INotificationHandler<CreateJupyterContainerRequest>
 {
+    private readonly DockerImageSettings _dockerImageSettings = dockerImageOptions.Value;
+
     // helper for structured, colored logging
     private static void LogStep(string message)
     {
@@ -50,17 +57,17 @@ public class CreateJupyterContainerRequestHandler(IMediator mediator, SparklingD
         return random.Next(20000, 30000);
     }
 
-    private static async Task<Container> CreateContainer(
+    private async Task<Container> CreateContainer(
         Node node,
         IDockerClient client,
         CancellationToken cancellationToken,
         Guid containerId,
-        string jupyterToken,    // ← new parameter
-        int jupyterPort         // ← new parameter
+        string jupyterToken,
+        int jupyterPort
     )
     {
-        const string image = "quay.io/jupyter/all-spark-notebook";
-        const string tag   = "2025-07-07";
+        var image = _dockerImageSettings.Jupyter.Contains(':') ? _dockerImageSettings.Jupyter.Split(':')[0] : _dockerImageSettings.Jupyter;
+        var tag = _dockerImageSettings.Jupyter.Contains(':') ? _dockerImageSettings.Jupyter.Split(':')[1] : "latest";
 
         LogStep($"Pulling image {image}:{tag}");
         await client.Images.CreateImageAsync(
@@ -86,14 +93,14 @@ public class CreateJupyterContainerRequestHandler(IMediator mediator, SparklingD
 
         await client.Containers.CreateContainerAsync(new CreateContainerParameters
         {
-            Image        = $"{image}:{tag}",
-            Name         = containerId.ToString(),
-            Tty          = true,
-            OpenStdin    = true,
-            Env          = env,
-            HostConfig   = new HostConfig
+            Image = $"{image}:{tag}",
+            Name = containerId.ToString(),
+            Tty = true,
+            OpenStdin = true,
+            Env = env,
+            HostConfig = new HostConfig
             {
-                PortBindings  = portBindings,
+                PortBindings = portBindings,
                 RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.Always }
             },
             ExposedPorts = exposedPorts,
@@ -155,15 +162,15 @@ public class CreateJupyterContainerRequestHandler(IMediator mediator, SparklingD
         return new Container
         {
             CreationDateTime = DateTime.UtcNow,
-            Id               = containerId,
-            ImageName        = image,
-            ImageTag         = tag,
-            Ports            = hostPort,
-            Type             = ContainerType.JupyterNotebook,
-            Volumes          = "",
-            NodeId           = node.Id,
-            JupyterToken     = jupyterToken,   // ← add this property to your Container model
-            JupyterPort      = jupyterPort     // ← add this property to your Container model
+            Id = containerId,
+            ImageName = image,
+            ImageTag = tag,
+            Ports = hostPort,
+            Type = ContainerType.JupyterNotebook,
+            Volumes = "",
+            NodeId = node.Id,
+            JupyterToken = jupyterToken,   // ← add this property to your Container model
+            JupyterPort = jupyterPort     // ← add this property to your Container model
         };
     }
 
@@ -182,8 +189,8 @@ public class CreateJupyterContainerRequestHandler(IMediator mediator, SparklingD
 
         LogStep("Generating container ID, Jupyter token, and port up front");
         var containerGuid = Guid.NewGuid();
-        var jupyterToken  = GenerateRandomToken();
-        var jupyterPort   = GenerateRandomPort();
+        var jupyterToken = GenerateRandomToken();
+        var jupyterPort = GenerateRandomPort();
 
         var pipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
@@ -219,11 +226,11 @@ public class CreateJupyterContainerRequestHandler(IMediator mediator, SparklingD
                 LogStep($"Container created with internal ID {container.Id}");
 
                 LogStep("Updating work session and persisting container");
-                workSession.Status           = WorkSessionStatus.Running;
-                workSession.StartTime        = DateTime.UtcNow;
-                workSession.JupyterContainerId  = container.Id;
-                workSession.JupyterToken        = container.JupyterToken;
-                workSession.JupyterPort         = container.JupyterPort;
+                workSession.Status = WorkSessionStatus.Running;
+                workSession.StartTime = DateTime.UtcNow;
+                workSession.JupyterContainerId = container.Id;
+                workSession.JupyterToken = container.JupyterToken;
+                workSession.JupyterPort = container.JupyterPort;
 
                 sparklingDbContext.Containers.Add(container);
                 sparklingDbContext.Entry(workSession).State = EntityState.Modified;
