@@ -10,11 +10,14 @@ services:
     networks:
       - appnet
     working_dir: /app
-    user: app
+    user: root # Change user to root for initial setup
     command: >
       /bin/sh -c "
-      export ASPNETCORE_URLS=\"http://*:5128\";
-      cd /app && touch /app/data/mydb.db && ln -s /app/data/mydb.db /app/mydb.db; dotnet Sparkling.Backend.dll
+      chown app:app /app/data; 
+      exec su app -c ' # Switch to app user for the rest of the commands
+        export ASPNETCORE_URLS=\"http://*:5128\";
+        cd /app && touch /app/data/mydb.db && ln -s /app/data/mydb.db /app/mydb.db; dotnet Sparkling.Backend.dll
+      '
       "
 
   frontend:
