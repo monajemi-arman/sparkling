@@ -10,7 +10,8 @@ Sparkling is an easy-to-use Apache Spark setup and management platform. Written 
 
 ---
 ## 🛠️ Requirements
-This software is meant for **Linux** based operating systems. If running on **Windows**, use **WSL Ubuntu** for best results. For running this project, only **Docker** is required. Install Docker from the official repository:
+This software is meant for **Linux** based operating systems only! If running on **Windows**, use **WSL Ubuntu**.  
+For running this project, only **Docker** is required. Install Docker from the official repository:
 ```bash
 curl -fsSL https://get.docker.com | sh
 ```
@@ -22,6 +23,7 @@ Only for **development**, you would need **dotnet-9** and **node.js** installed.
 ## 🚀 Usage
 Follow these steps to start the project:
 *   ⬇️ **Clone** this repository
+*   🛠️ **Build our docker images**, in the repository directory, run `./docker-images/build`
 *   ⬆️ In the repository directory, run `docker compose up`
 *   🌐 The web-based panel should now be up at `http://localhost`
 *   🔑 **Login** with default admin credentials: `admin` and `123456Aa!@#`
