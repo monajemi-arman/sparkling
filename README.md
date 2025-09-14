@@ -34,7 +34,7 @@ Follow these steps to start the project:
 *   🔐 **Generate self-signed certificates**, in the repository directory, run `./sparkling-frontend/generate-ssl-certificates.sh`
 *   ⬆️ **To start the program**, in the repository directory, run `docker compose up`
 *   🌐 The web-based panel should now be up at `http://localhost`
-*   🔑 **Login** with default admin credentials: `admin` and `123456Aa!@#`
+*   🔑 **Login** with default admin credentials: `info@sparklean.io` and `123456Aa!@#`
 *   ➕ Under node list, **add a local node** (required), then other nodes (optional)
 *   ▶️ Go to work list and **start your first work**
 *   📊 Click on Jupyter to **open your work session**
