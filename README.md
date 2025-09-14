@@ -31,7 +31,8 @@ Only for **development**, you would need **dotnet-9** and **node.js** installed.
 Follow these steps to start the project:
 *   ⬇️ **Clone** this repository
 *   🛠️ **Build our docker images**, in the repository directory, run `./docker-images/build`
-*   ⬆️ In the repository directory, run `docker compose up`
+*   🔐 **Generate self-signed certificates**, in the repository directory, run `./sparkling-frontend/generate-ssl-certificates.sh`
+*   ⬆️ **To start the program**, in the repository directory, run `docker compose up`
 *   🌐 The web-based panel should now be up at `http://localhost`
 *   🔑 **Login** with default admin credentials: `admin` and `123456Aa!@#`
 *   ➕ Under node list, **add a local node** (required), then other nodes (optional)
