@@ -15,10 +15,14 @@ public class CreateSparkContainerRequestHandler(
     SparklingDbContext sparklingDbContext,
     IMediator mediator,
     ILogService logService,
-    IOptions<DockerImageSettings> dockerImageOptions)
+    IOptions<DockerImageSettings> dockerImageOptions,
+    IOptions<DockerContainerSettings> dockerContainerOptions)
     : IRequestHandler<CreateSparkContainerRequest, Container>
 {
     private readonly DockerImageSettings _dockerImageSettings = dockerImageOptions.Value;
+    private readonly DockerContainerSettings _dockerContainerSettings = dockerContainerOptions.Value;
+    // Calculate the project root path once
+    private readonly string _projectRootPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../"));
 
     public async Task<Container> Handle(CreateSparkContainerRequest request, CancellationToken cancellationToken)
     {
@@ -91,6 +95,15 @@ public class CreateSparkContainerRequestHandler(
         exposedPorts.Add("7077/tcp", new EmptyStruct());
         exposedPorts.Add("8080/tcp", new EmptyStruct());
 
+        // Construct the absolute path for the shared volume
+        var absoluteSharedVolumeHostPath = Path.Combine(_projectRootPath, _dockerContainerSettings.SharedVolumeHostPath);
+
+        // Ensure the shared volume host path exists
+        if (!Directory.Exists(absoluteSharedVolumeHostPath))
+        {
+            Directory.CreateDirectory(absoluteSharedVolumeHostPath);
+        }
+
         await client.Containers.CreateContainerAsync(new CreateContainerParameters()
         {
             Image = _dockerImageSettings.Spark,
@@ -107,7 +120,10 @@ public class CreateSparkContainerRequestHandler(
             {
                 PortBindings = portBindings,
                 RestartPolicy = new RestartPolicy() { Name = RestartPolicyKind.Always },
-                Mounts = [new Mount() { Type = "volume", Source = volumeName, Target = "/opt/spark" }]
+                Mounts = [
+                    new Mount() { Type = "volume", Source = volumeName, Target = "/opt/spark" },
+                    new Mount() { Type = "bind", Source = absoluteSharedVolumeHostPath, Target = "/shared-volume" }
+                ]
             },
             ExposedPorts = exposedPorts
         }, cancellationToken);
@@ -132,6 +148,16 @@ public class CreateSparkContainerRequestHandler(
         Dictionary<string, EmptyStruct> exposedPorts = [];
         exposedPorts.Add("8081/tcp", new EmptyStruct());
 
+        // Construct the absolute path for the shared volume
+        var absoluteSharedVolumeHostPath = Path.Combine(_projectRootPath, _dockerContainerSettings.SharedVolumeHostPath);
+
+        // Ensure the shared volume host path exists
+        if (!Directory.Exists(absoluteSharedVolumeHostPath))
+        {
+            Console.WriteLine($"Creating host directory for shared volume: {absoluteSharedVolumeHostPath}");
+            Directory.CreateDirectory(absoluteSharedVolumeHostPath);
+        }
+
         await client.Containers.CreateContainerAsync(new CreateContainerParameters()
         {
             Image = _dockerImageSettings.Spark,
@@ -149,7 +175,10 @@ public class CreateSparkContainerRequestHandler(
             {
                 PortBindings = portBindings,
                 RestartPolicy = new RestartPolicy() { Name = RestartPolicyKind.Always },
-                Mounts = [new Mount() { Type = "volume", Source = volumeName, Target = "/opt/spark" }]
+                Mounts = [
+                    new Mount() { Type = "volume", Source = volumeName, Target = "/opt/spark" },
+                    new Mount() { Type = "bind", Source = absoluteSharedVolumeHostPath, Target = "/shared-volume" }
+                ]
             },
             ExposedPorts = exposedPorts
         }, cancellationToken);

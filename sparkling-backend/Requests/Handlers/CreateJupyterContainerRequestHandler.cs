@@ -14,10 +14,14 @@ namespace Sparkling.Backend.Requests.Handlers;
 public class CreateJupyterContainerRequestHandler(
     IMediator mediator,
     SparklingDbContext sparklingDbContext,
-    IOptions<DockerImageSettings> dockerImageOptions)
+    IOptions<DockerImageSettings> dockerImageOptions,
+    IOptions<DockerContainerSettings> dockerContainerOptions)
     : INotificationHandler<CreateJupyterContainerRequest>
 {
     private readonly DockerImageSettings _dockerImageSettings = dockerImageOptions.Value;
+    private readonly DockerContainerSettings _dockerContainerSettings = dockerContainerOptions.Value;
+    // Calculate the project root path once
+    private readonly string _projectRootPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../"));
 
     // helper for structured, colored logging
     private static void LogStep(string message)
@@ -91,6 +95,16 @@ public class CreateJupyterContainerRequestHandler(
             $"JUPYTER_PORT={jupyterPort}"
         };
 
+        // Construct the absolute path for the shared volume
+        var absoluteSharedVolumeHostPath = Path.Combine(_projectRootPath, _dockerContainerSettings.SharedVolumeHostPath);
+
+        // Ensure the shared volume host path exists
+        if (!Directory.Exists(absoluteSharedVolumeHostPath))
+        {
+            LogStep($"Creating host directory for shared volume: {absoluteSharedVolumeHostPath}");
+            Directory.CreateDirectory(absoluteSharedVolumeHostPath);
+        }
+
         await client.Containers.CreateContainerAsync(new CreateContainerParameters
         {
             Image = $"{image}:{tag}",
@@ -101,7 +115,10 @@ public class CreateJupyterContainerRequestHandler(
             HostConfig = new HostConfig
             {
                 PortBindings = portBindings,
-                RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.Always }
+                RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.Always },
+                Mounts = [
+                    new Mount() { Type = "bind", Source = absoluteSharedVolumeHostPath, Target = "/shared-volume" }
+                ]
             },
             ExposedPorts = exposedPorts,
         }, cancellationToken);
