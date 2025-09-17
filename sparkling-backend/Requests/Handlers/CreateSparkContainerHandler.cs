@@ -26,6 +26,8 @@ public class CreateSparkContainerRequestHandler(
     // Calculate the project root path once
     private readonly string _projectRootPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../"));
 
+    string composeDir = Environment.GetEnvironmentVariable("COMPOSE_DIR");
+
     public async Task<Container> Handle(CreateSparkContainerRequest request, CancellationToken cancellationToken)
     {
         var client = request.DockerClient;
@@ -156,6 +158,15 @@ public class CreateSparkContainerRequestHandler(
             Directory.CreateDirectory(absoluteSharedVolumeHostPath);
         }
 
+
+        string mountSourcePath = absoluteSharedVolumeHostPath;
+
+        if (!string.IsNullOrEmpty(composeDir))
+        {
+            logger.LogInformation("Oh my! We are inside docker!");
+            mountSourcePath = Path.Combine(composeDir, _dockerContainerSettings.SharedVolumeHostPath);
+        }
+
         try
         {
             await client.Containers.CreateContainerAsync(new CreateContainerParameters()
@@ -176,7 +187,7 @@ public class CreateSparkContainerRequestHandler(
                     RestartPolicy = new RestartPolicy() { Name = RestartPolicyKind.Always },
                     Mounts = [
                         new Mount() { Type = "volume", Source = volumeName, Target = "/opt/spark" },
-                        new Mount() { Type = "bind", Source = absoluteSharedVolumeHostPath, Target = "/shared-volume" }
+                        new Mount() { Type = "bind", Source = mountSourcePath, Target = "/shared-volume" }
                     ]
                 },
                 ExposedPorts = exposedPorts
@@ -232,6 +243,14 @@ public class CreateSparkContainerRequestHandler(
             Directory.CreateDirectory(absoluteSharedVolumeHostPath);
         }
 
+        string mountSourcePath = absoluteSharedVolumeHostPath;
+
+        if (!string.IsNullOrEmpty(composeDir))
+        {
+            mountSourcePath = Path.Combine(composeDir, _dockerContainerSettings.SharedVolumeHostPath);
+        }
+
+
         try
         {
             await client.Containers.CreateContainerAsync(new CreateContainerParameters()
@@ -253,7 +272,7 @@ public class CreateSparkContainerRequestHandler(
                     RestartPolicy = new RestartPolicy() { Name = RestartPolicyKind.Always },
                     Mounts = [
                         new Mount() { Type = "volume", Source = volumeName, Target = "/opt/spark" },
-                        new Mount() { Type = "bind", Source = absoluteSharedVolumeHostPath, Target = "/shared-volume" }
+                        new Mount() { Type = "bind", Source = mountSourcePath, Target = "/shared-volume" }
                     ]
                 },
                 ExposedPorts = exposedPorts

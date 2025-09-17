@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using MediatR;
@@ -22,6 +23,8 @@ public class CreateJupyterContainerRequestHandler(
     private readonly DockerContainerSettings _dockerContainerSettings = dockerContainerOptions.Value;
     // Calculate the project root path once
     private readonly string _projectRootPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../"));
+
+    string composeDir = Environment.GetEnvironmentVariable("COMPOSE_DIR");
 
     // helper for structured, colored logging
     private static void LogStep(string message)
@@ -105,6 +108,14 @@ public class CreateJupyterContainerRequestHandler(
             Directory.CreateDirectory(absoluteSharedVolumeHostPath);
         }
 
+        string mountSourcePath = absoluteSharedVolumeHostPath;
+
+        if (!string.IsNullOrEmpty(composeDir))
+        {
+            LogStep("Oh my! We are inside docker!");
+            mountSourcePath = Path.Combine(composeDir, _dockerContainerSettings.SharedVolumeHostPath);
+        }
+
         await client.Containers.CreateContainerAsync(new CreateContainerParameters
         {
             Image = $"{image}:{tag}",
@@ -117,7 +128,7 @@ public class CreateJupyterContainerRequestHandler(
                 PortBindings = portBindings,
                 RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.Always },
                 Mounts = [
-                    new Mount() { Type = "bind", Source = absoluteSharedVolumeHostPath, Target = "/shared-volume" }
+                    new Mount() { Type = "bind", Source = mountSourcePath, Target = "/shared-volume" }
                 ]
             },
             ExposedPorts = exposedPorts,

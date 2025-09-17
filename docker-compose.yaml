@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
   backend:
     build:
@@ -7,31 +8,27 @@ services:
       - "5128:5128"
     volumes:
       - db_data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./shared-volume:/shared-volume
     networks:
       - appnet
     working_dir: /app
-    user: root # Change user to root for initial setup
+    user: root
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      DEBUG_MODE: "${DEBUG_MODE:-false}" # Set to "true" from terminal to enable development environment, defaults to "false"
+      - COMPOSE_DIR=${PWD}
+      - ASPNETCORE_URLS=http://+:5128
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_LISTEN_ADDRESS=0.0.0.0
+      - ASPNETCORE_PORT=5128
+    
+    # Fix later, using root in command
     command: >
       /bin/sh -c "
       chown app:app /app/data;
-      # Conditional logic for debug mode (development environment)
-      if [ \"$DEBUG_MODE\" = \"true\" ]; then
-        exec su app -c '
-          export ASPNETCORE_ENVIRONMENT=\"Development\";
-          export ASPNETCORE_URLS=\"http://*:5128\";
-          cd /app && touch /app/data/mydb.db && ln -s /app/data/mydb.db /app/mydb.db; dotnet Sparkling.Backend.dll
-        '
-      else
-        exec su app -c ' # Switch to app user for the rest of the commands
-          export ASPNETCORE_ENVIRONMENT=\"Production\";
-          export ASPNETCORE_URLS=\"http://*:5128\";
-          cd /app && touch /app/data/mydb.db && ln -s /app/data/mydb.db /app/mydb.db; dotnet Sparkling.Backend.dll
-        '
-      fi
+      cd /app && touch /app/data/mydb.db && ln -sf /app/data/mydb.db /app/mydb.db;
+      dotnet Sparkling.Backend.dll
       "
 
   frontend:
