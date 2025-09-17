@@ -14,7 +14,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      DEBUG_MODE: "false" # Set to "true" to enable development environment for error messages
+      DEBUG_MODE: "${DEBUG_MODE:-false}" # Set to "true" from terminal to enable development environment, defaults to "false"
     command: >
       /bin/sh -c "
       chown app:app /app/data;
