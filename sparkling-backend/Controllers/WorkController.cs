@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sparkling.Backend.Models;
 using Sparkling.Backend.Requests;
-using Microsoft.Extensions.Logging;
 
 namespace Sparkling.Backend.Controllers;
 
@@ -187,7 +186,9 @@ public class WorkController(SparklingDbContext sparklingDbContext, UserManager<U
         logger.LogInformation("Publishing StopJupyterContainerRequest for WorkSessionId: {WorkSessionId}", workSession.Id);
         _ = Task.Run(async () =>
         {
-            await mediator.Send(new StopJupyterContainerRequest { WorkSessionId = workSession.Id });
+            using var scope = HttpContext.RequestServices.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Publish(new StopJupyterContainerRequest { WorkSessionId = workSession.Id });
         });
 
         return NoContent();

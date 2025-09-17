@@ -14,7 +14,7 @@ public class StopJupyerContainerRequestHandler(IMediator mediator, SparklingDbCo
 {
     private static async Task<ContainerListResponse> GetContainerById(IDockerClient client, Guid jupyterContainerId, CancellationToken cancellationToken, ILogger<StopJupyerContainerRequestHandler> logger)
     {
-        logger.LogDebug("Searching for Docker container with label 'sparkling_jupyter_container_id={JupyterContainerId}'.", jupyterContainerId);
+        logger.LogDebug("Searching for Docker container with label '{JupyterContainerId}'.", jupyterContainerId);
 
         var containers = await client.Containers.ListContainersAsync(
             new ContainersListParameters
@@ -22,7 +22,7 @@ public class StopJupyerContainerRequestHandler(IMediator mediator, SparklingDbCo
                 All = true,
                 Filters = new Dictionary<string, IDictionary<string, bool>>
                 {
-                    { "label", new Dictionary<string, bool> { { $"sparkling_jupyter_container_id={jupyterContainerId}", true } } }
+                    { "label", new Dictionary<string, bool> { { $"{jupyterContainerId}", true } } }
                 }
             },
             cancellationToken
@@ -32,8 +32,8 @@ public class StopJupyerContainerRequestHandler(IMediator mediator, SparklingDbCo
 
         if (container == null)
         {
-            logger.LogWarning("Docker container with label 'sparkling_jupyter_container_id={JupyterContainerId}' not found.", jupyterContainerId);
-            throw new NonRetryableException($"Docker container with label 'sparkling_jupyter_container_id={jupyterContainerId}' not found.");
+            logger.LogWarning("Docker container with label '{JupyterContainerId}' not found.", jupyterContainerId);
+            throw new NonRetryableException($"Docker container with label '{jupyterContainerId}' not found.");
         }
 
         logger.LogDebug("Found Docker container with ID: {DockerContainerId} for JupyterContainerId: {JupyterContainerId}.", container.ID, jupyterContainerId);
