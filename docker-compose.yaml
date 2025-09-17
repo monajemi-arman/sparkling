@@ -11,6 +11,8 @@ services:
       - appnet
     working_dir: /app
     user: root # Change user to root for initial setup
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: >
       /bin/sh -c "
       chown app:app /app/data; 

@@ -64,19 +64,66 @@ public class GetDockerClientRequestHandler : IRequestHandler<GetDockerClientRequ
         }
         else
         {
-            // Explicitly use the Docker TCP endpoint
-            IDockerClient dockerClient;
-            var dockerUri = new Uri("http://127.0.0.1:5763");
-            _logger.LogInformation("Node is local. Creating Docker client using URI: {DockerUri}", dockerUri);
-            try
+            IDockerClient dockerClient = null;
+            Uri dockerUri = null;
+            const string unixSocketPath = "/var/run/docker.sock";
+            bool clientCreated = false;
+
+            // Attempt 1: Unix socket
+            if (File.Exists(unixSocketPath))
             {
-                dockerClient = new DockerClientConfiguration(dockerUri).CreateClient();
-                _logger.LogInformation("Docker client created successfully for local node.");
+                dockerUri = new Uri($"unix://{unixSocketPath}");
+                _logger.LogInformation("Node is local. Attempting Docker client creation using Unix socket URI: {DockerUri}", dockerUri);
+                try
+                {
+                    dockerClient = new DockerClientConfiguration(dockerUri).CreateClient();
+                    _logger.LogInformation("Docker client created successfully for local node using Unix socket.");
+                    clientCreated = true;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to create Docker client for local node using Unix socket URI: {DockerUri}. Falling back to TCP attempts.", dockerUri);
+                }
             }
-            catch (Exception ex)
+
+            // Attempt 2: 127.0.0.1 TCP
+            if (!clientCreated)
             {
-                _logger.LogError(ex, "Failed to create Docker client for local node using URI: {DockerUri}. Ensure Docker daemon is running and listening on this TCP port.", dockerUri);
-                throw;
+                dockerUri = new Uri("http://127.0.0.1:5763");
+                _logger.LogInformation("Node is local. Attempting Docker client creation using TCP URI: {DockerUri}", dockerUri);
+                try
+                {
+                    dockerClient = new DockerClientConfiguration(dockerUri).CreateClient();
+                    _logger.LogInformation("Docker client created successfully for local node using 127.0.0.1.");
+                    clientCreated = true;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to create Docker client for local node using URI: {DockerUri}. Attempting host.docker.internal.", dockerUri);
+                }
+            }
+
+            // Attempt 3: host.docker.internal TCP
+            if (!clientCreated)
+            {
+                dockerUri = new Uri("http://host.docker.internal:5763");
+                _logger.LogInformation("Node is local. Attempting Docker client creation using TCP URI: {DockerUri}", dockerUri);
+                try
+                {
+                    dockerClient = new DockerClientConfiguration(dockerUri).CreateClient();
+                    _logger.LogInformation("Docker client created successfully for local node using host.docker.internal.");
+                    clientCreated = true;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to create Docker client for local node using URI: {DockerUri}. All local connection attempts failed.", dockerUri);
+                    throw; // Re-throw if all attempts fail
+                }
+            }
+
+            if (!clientCreated)
+            {
+                throw new InvalidOperationException("Failed to create Docker client for local node after all attempts.");
             }
 
             return (dockerClient, () => { /* No cleanup needed for local Docker client */ });
