@@ -16,13 +16,21 @@ public class StopJupyerContainerRequestHandler(IMediator mediator, SparklingDbCo
     {
         logger.LogDebug("Searching for Docker container with label '{JupyterContainerId}'.", jupyterContainerId);
 
+        var containersAll = await client.Containers.ListContainersAsync(
+            new ContainersListParameters
+            {
+                All = true
+            },
+            cancellationToken
+        );
+
         var containers = await client.Containers.ListContainersAsync(
             new ContainersListParameters
             {
                 All = true,
                 Filters = new Dictionary<string, IDictionary<string, bool>>
                 {
-                    { "label", new Dictionary<string, bool> { { $"{jupyterContainerId}", true } } }
+                    { "name", new Dictionary<string, bool> { { $"{jupyterContainerId}", true } } }
                 }
             },
             cancellationToken

@@ -121,12 +121,7 @@ public class WorkController(SparklingDbContext sparklingDbContext, UserManager<U
         await sparklingDbContext.WorkSessions.AddAsync(workSession);
         await sparklingDbContext.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
-        {
-            using var scope = HttpContext.RequestServices.CreateScope();
-            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            await mediator.Publish(new CreateJupyterContainerRequest { WorkSessionId = workSession.Id });
-        });
+        await mediator.Publish(new CreateJupyterContainerRequest { WorkSessionId = workSession.Id });
 
         return workSession.Id;
     }
@@ -184,12 +179,7 @@ public class WorkController(SparklingDbContext sparklingDbContext, UserManager<U
 
         // Publish a request to stop the Jupyter container
         logger.LogInformation("Publishing StopJupyterContainerRequest for WorkSessionId: {WorkSessionId}", workSession.Id);
-        _ = Task.Run(async () =>
-        {
-            using var scope = HttpContext.RequestServices.CreateScope();
-            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            await mediator.Publish(new StopJupyterContainerRequest { WorkSessionId = workSession.Id });
-        });
+        await mediator.Publish(new StopJupyterContainerRequest { WorkSessionId = workSession.Id });
 
         return NoContent();
     }
