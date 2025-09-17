@@ -33,30 +33,30 @@ public class CreateSparkContainerRequestHandler(
 
         try
         {
-            logService.Broadcast(
-                new Log(request.Node.Id, "pulling_image", "Pulling Spark image")
-            );
-            logger.LogInformation("Attempting to pull Docker image: {ImageName}:{ImageTag} for Node ID: {NodeId}", _dockerImageSettings.SparkImageName, _dockerImageSettings.SparkImageTag, request.Node.Id);
+            // logService.Broadcast(
+            //     new Log(request.Node.Id, "pulling_image", "Pulling Spark image")
+            // );
+            // logger.LogInformation("Attempting to pull Docker image: {ImageName}:{ImageTag} for Node ID: {NodeId}", _dockerImageSettings.SparkImageName, _dockerImageSettings.SparkImageTag, request.Node.Id);
 
-            try
-            {
-                await client.Images.CreateImageAsync(new ImagesCreateParameters()
-                        { FromImage = _dockerImageSettings.SparkImageName, Tag = _dockerImageSettings.SparkImageTag },
-                    new AuthConfig(), new Progress<JSONMessage>(),
-                    cancellationToken);
-                logger.LogInformation("Successfully pulled Docker image: {ImageName}:{ImageTag} for Node ID: {NodeId}", _dockerImageSettings.SparkImageName, _dockerImageSettings.SparkImageTag, request.Node.Id);
-            }
-            catch (DockerApiException daEx)
-            {
-                logger.LogError(daEx, "Docker API Exception when pulling image {ImageName}:{ImageTag} for Node ID: {NodeId}. Status: {StatusCode}, Response: {Response}",
-                    _dockerImageSettings.SparkImageName, _dockerImageSettings.SparkImageTag, request.Node.Id, daEx.StatusCode, daEx.ResponseBody);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "An unexpected error occurred when pulling image {ImageName}:{ImageTag} for Node ID: {NodeId}.", _dockerImageSettings.SparkImageName, _dockerImageSettings.SparkImageTag, request.Node.Id);
-                throw;
-            }
+            // try
+            // {
+            //     await client.Images.CreateImageAsync(new ImagesCreateParameters()
+            //             { FromImage = _dockerImageSettings.SparkImageName, Tag = _dockerImageSettings.SparkImageTag },
+            //         new AuthConfig(), new Progress<JSONMessage>(),
+            //         cancellationToken);
+            //     logger.LogInformation("Successfully pulled Docker image: {ImageName}:{ImageTag} for Node ID: {NodeId}", _dockerImageSettings.SparkImageName, _dockerImageSettings.SparkImageTag, request.Node.Id);
+            // }
+            // catch (DockerApiException daEx)
+            // {
+            //     logger.LogError(daEx, "Docker API Exception when pulling image {ImageName}:{ImageTag} for Node ID: {NodeId}. Status: {StatusCode}, Response: {Response}",
+            //         _dockerImageSettings.SparkImageName, _dockerImageSettings.SparkImageTag, request.Node.Id, daEx.StatusCode, daEx.ResponseBody);
+            //     throw;
+            // }
+            // catch (Exception ex)
+            // {
+            //     logger.LogError(ex, "An unexpected error occurred when pulling image {ImageName}:{ImageTag} for Node ID: {NodeId}.", _dockerImageSettings.SparkImageName, _dockerImageSettings.SparkImageTag, request.Node.Id);
+            //     throw;
+            // }
 
 
             logService.Broadcast(

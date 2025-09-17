@@ -73,13 +73,13 @@ public class CreateJupyterContainerRequestHandler(
         var image = _dockerImageSettings.Jupyter.Contains(':') ? _dockerImageSettings.Jupyter.Split(':')[0] : _dockerImageSettings.Jupyter;
         var tag = _dockerImageSettings.Jupyter.Contains(':') ? _dockerImageSettings.Jupyter.Split(':')[1] : "latest";
 
-        LogStep($"Pulling image {image}:{tag}");
-        await client.Images.CreateImageAsync(
-            new ImagesCreateParameters { FromImage = image, Tag = tag },
-            new AuthConfig(),
-            new Progress<JSONMessage>(),
-            cancellationToken);
-        LogStep("Image pull complete");
+        // LogStep($"Pulling image {image}:{tag}");
+        // await client.Images.CreateImageAsync(
+        //     new ImagesCreateParameters { FromImage = image, Tag = tag },
+        //     new AuthConfig(),
+        //     new Progress<JSONMessage>(),
+        //     cancellationToken);
+        // LogStep("Image pull complete");
 
         LogStep($"Creating container entry in Docker with name {containerId}");
 
