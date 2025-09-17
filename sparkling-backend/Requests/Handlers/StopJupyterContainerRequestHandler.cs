@@ -11,16 +11,26 @@ namespace Sparkling.Backend.Requests.Handlers;
 
 public class StopJupyerContainerRequestHandler(IMediator mediator, SparklingDbContext sparklingDbContext): INotificationHandler<StopJupyterContainerRequest>
 {
-    private static async Task<ContainerListResponse> GetContainerById(IDockerClient client, Guid databaseId, CancellationToken cancellationToken)
+    private static async Task<ContainerListResponse> GetContainerById(IDockerClient client, Guid jupyterContainerId, CancellationToken cancellationToken)
     {
-        var containers = await client.Containers.ListContainersAsync(new ContainersListParameters() { All = true }, cancellationToken);
+        var containers = await client.Containers.ListContainersAsync(
+            new ContainersListParameters
+            {
+                All = true,
+                Filters = new Dictionary<string, IDictionary<string, bool>>
+                {
+                    { "label", new Dictionary<string, bool> { { $"sparkling_jupyter_container_id={jupyterContainerId}", true } } }
+                }
+            },
+            cancellationToken
+        );
 
-        var container =
-            containers
-                .First(
-                    container => 
-                        container.Names.Any(name => name.Contains(databaseId.ToString()))
-                );
+        var container = containers.FirstOrDefault();
+
+        if (container == null)
+        {
+            throw new NonRetryableException($"Docker container with label 'sparkling_jupyter_container_id={jupyterContainerId}' not found.");
+        }
 
         return container;
     }
@@ -67,6 +77,7 @@ public class StopJupyerContainerRequestHandler(IMediator mediator, SparklingDbCo
 
                 var dbContainer = workSession.JupyterContainer;
                 
+                // Pass the JupyterContainer's Id to the updated GetContainerById method
                 var container = await GetContainerById(client, workSession.JupyterContainer.Id, token);
                 
                 await client.Containers.RemoveContainerAsync(container.ID,

@@ -177,6 +177,14 @@ public class WorkController(SparklingDbContext sparklingDbContext, UserManager<U
 
         await sparklingDbContext.SaveChangesAsync();
 
+        // Publish a request to stop the Jupyter container
+        _ = Task.Run(async () =>
+        {
+            using var scope = HttpContext.RequestServices.CreateScope();
+            var scopedMediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            await scopedMediator.Publish(new StopJupyterContainerRequest { WorkSessionId = workSession.Id });
+        });
+
         return NoContent();
     }
 }
