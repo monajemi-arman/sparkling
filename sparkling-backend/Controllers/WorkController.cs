@@ -6,12 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sparkling.Backend.Models;
 using Sparkling.Backend.Requests;
+using Microsoft.Extensions.Logging;
 
 namespace Sparkling.Backend.Controllers;
 
 [ApiController]
 [Route("api/v0/[controller]")]
-public class WorkController(SparklingDbContext sparklingDbContext, UserManager<User> userManager, IMediator mediator) : ControllerBase
+public class WorkController(SparklingDbContext sparklingDbContext, UserManager<User> userManager, IMediator mediator, ILogger<WorkController> logger) : ControllerBase
 {
     [HttpGet]
     [Authorize]
@@ -140,6 +141,7 @@ public class WorkController(SparklingDbContext sparklingDbContext, UserManager<U
 
         if (workSession == null)
         {
+            logger.LogWarning("Stop request for WorkSessionId {WorkSessionId} failed: Not Found.", id);
             return NotFound();
         }
 
@@ -150,11 +152,13 @@ public class WorkController(SparklingDbContext sparklingDbContext, UserManager<U
         var isNormalUser = !User.IsInRole("Admin");
         if (workSession.UserId != userId && isNormalUser)
         {
+            logger.LogWarning("Stop request for WorkSessionId {WorkSessionId} failed: User {UserId} forbidden.", id, userId);
             return Forbid("You are not allowed to delete this work session.");
         }
 
         if (workSession.Status != WorkSessionStatus.Starting && workSession.Status != WorkSessionStatus.Running)
         {
+            logger.LogWarning("Stop request for WorkSessionId {WorkSessionId} failed: Invalid status {Status}.", id, workSession.Status);
             return BadRequest("Work session is not in a state that can be deleted.");
         }
 
@@ -162,6 +166,7 @@ public class WorkController(SparklingDbContext sparklingDbContext, UserManager<U
 
         if (user == null)
         {
+            logger.LogError("User not found for WorkSessionId {WorkSessionId}. This should not happen.", id);
             return NotFound("User not found, should not happen.");
         }
 
@@ -176,13 +181,13 @@ public class WorkController(SparklingDbContext sparklingDbContext, UserManager<U
         sparklingDbContext.Entry(workSession).State = EntityState.Modified;
 
         await sparklingDbContext.SaveChangesAsync();
+        logger.LogInformation("WorkSession {WorkSessionId} status updated to Ended in database.", id);
 
         // Publish a request to stop the Jupyter container
+        logger.LogInformation("Publishing StopJupyterContainerRequest for WorkSessionId: {WorkSessionId}", workSession.Id);
         _ = Task.Run(async () =>
         {
-            using var scope = HttpContext.RequestServices.CreateScope();
-            var scopedMediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            await scopedMediator.Publish(new StopJupyterContainerRequest { WorkSessionId = workSession.Id });
+            await mediator.Send(new StopJupyterContainerRequest { WorkSessionId = workSession.Id });
         });
 
         return NoContent();
