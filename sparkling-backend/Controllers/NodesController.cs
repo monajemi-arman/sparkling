@@ -14,6 +14,7 @@ using System.Text;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using Sparkling.Backend.Services;
+using Microsoft.Extensions.Logging; // Add this using directive
 
 namespace Sparkling.Backend.Controllers;
 
@@ -23,7 +24,8 @@ public class NodesController(
     SparklingDbContext sparklingDbContext,
     IValidator<NodeDto> nodeValidator,
     IMediator mediator,
-    ILogService logService) : ControllerBase
+    ILogService logService,
+    ILogger<NodesController> logger) : ControllerBase
 {
     [Authorize]
     [HttpGet]
@@ -217,10 +219,20 @@ public class NodesController(
             return NotFound("Node not found.");
         }
 
-        // Pass a callback to the handler for status updates
-        await mediator.Publish(new NodeActivationRequest() { NodeId = id });
+        logger.LogInformation("Received activation request for node {NodeId}.", id);
+        bool success = await mediator.Send(new NodeActivationRequest() { NodeId = id });
 
-        return Ok();
+        if (success)
+        {
+            logger.LogInformation("Node {NodeId} activated successfully.", id);
+            return Ok();
+        }
+        else
+        {
+            logger.LogError("Node {NodeId} activation failed.", id);
+            // The handler already updated the node's IsActive status to false
+            return StatusCode(StatusCodes.Status500InternalServerError, "Node activation failed. Check logs for details.");
+        }
     }
 
     [Authorize(Roles = "Admin")]
@@ -243,22 +255,29 @@ public class NodesController(
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteNode(Guid id)
     {
+        logger.LogInformation("Attempting to delete node with ID: {NodeId}", id);
+
         var node = await sparklingDbContext.Nodes
             .Include(n => n.Containers)
             .FirstOrDefaultAsync(n => n.Id == id);
 
         if (node == null)
+        {
+            logger.LogWarning("Node with ID: {NodeId} not found for deletion.", id);
             return NotFound();
+        }
 
         // Remove containers associated with the node from Docker host
         try
         {
+            logger.LogInformation("Getting Docker client for node {NodeId} ({NodeAddress}) to remove associated containers.", node.Id, node.Address);
             // Get Docker client for this node
             (IDockerClient dockerClient, Action cleanup) = await mediator.Send(
                 new GetDockerClientRequest { Node = node }, HttpContext.RequestAborted
             );
             using (dockerClient as IDisposable)
             {
+                logger.LogInformation("Listing containers with label 'sparkling_node_id={NodeId}' on node {NodeAddress}.", node.Id, node.Address);
                 // Find containers with label "sparkling_node_id" == node.Id
                 var containers = await dockerClient.Containers.ListContainersAsync(
                     new Docker.DotNet.Models.ContainersListParameters
@@ -270,35 +289,56 @@ public class NodesController(
                         }
                     }
                 );
+                logger.LogInformation("Found {ContainerCount} containers to remove for node {NodeId}.", containers.Count, node.Id);
+
                 foreach (var container in containers)
                 {
                     try
                     {
+                        logger.LogInformation("Attempting to remove container ID: {ContainerId}, Name: {ContainerName}", container.ID, container.Names?.FirstOrDefault());
                         await dockerClient.Containers.RemoveContainerAsync(
                             container.ID,
                             new Docker.DotNet.Models.ContainerRemoveParameters { Force = true }
                         );
+                        logger.LogInformation("Successfully removed container ID: {ContainerId}", container.ID);
                     }
-                    catch
+                    catch (DockerApiException daEx)
                     {
-                        // Ignore errors for individual containers
+                        logger.LogError(daEx, "Docker API Exception when removing container ID: {ContainerId}. Status: {StatusCode}, Response: {Response}",
+                            container.ID, daEx.StatusCode, daEx.ResponseBody);
+                        // Ignore errors for individual containers, continue with others
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "An unexpected error occurred when removing container ID: {ContainerId}.", container.ID);
+                        // Ignore errors for individual containers, continue with others
                     }
                 }
             }
             cleanup?.Invoke();
+            logger.LogInformation("Docker cleanup for node {NodeId} completed.", node.Id);
         }
-        catch
+        catch (DockerApiException daEx)
         {
+            logger.LogError(daEx, "Docker API Exception during Docker cleanup for node {NodeId}. Status: {StatusCode}, Response: {Response}",
+                node.Id, daEx.StatusCode, daEx.ResponseBody);
+            // Ignore errors in Docker cleanup, continue with DB removal
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An unexpected error occurred during Docker cleanup for node {NodeId}.", node.Id);
             // Ignore errors in Docker cleanup, continue with DB removal
         }
 
         // Optionally: Remove containers associated with the node from DB
         if (node.Containers != null)
         {
+            logger.LogInformation("Removing {ContainerCount} associated containers from database for node {NodeId}.", node.Containers.Count, node.Id);
             sparklingDbContext.Containers.RemoveRange(node.Containers);
         }
         sparklingDbContext.Nodes.Remove(node);
         await sparklingDbContext.SaveChangesAsync();
+        logger.LogInformation("Node {NodeId} and its associated containers removed from database.", node.Id);
 
         return NoContent();
     }
