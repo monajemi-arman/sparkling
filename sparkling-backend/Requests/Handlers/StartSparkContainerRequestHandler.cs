@@ -32,11 +32,12 @@ public class StartSparkContainerRequestHandler(IMediator mediator, ILogService l
     {
         logger.LogInformation("Handling StartSparkContainerRequest for Node ID: {NodeId}, IsLocal: {IsLocal}", request.Node.Id, request.Node.IsLocal);
 
+
         try
         {
+            // Safely check for existing Spark container, handling potential null Containers collection
             var maybeSparkContainer =
-                request.Node
-                    .Containers
+                request.Node.Containers?
                     .FirstOrDefault(c => c.Type == ContainerType.SparkNode);
 
             var pipeline = new ResiliencePipelineBuilder()

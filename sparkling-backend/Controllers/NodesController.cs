@@ -170,10 +170,17 @@ public class NodesController(
                # Configure Docker to listen on both Unix socket and TCP port 5763
                sudo mkdir -p /etc/systemd/system/docker.service.d
 
+               # Determine the correct path for dockerd
+               DOCKERD_PATH=$(which dockerd)
+               if [ -z "$DOCKERD_PATH" ]; then
+                   echo "Error: dockerd executable not found. Exiting."
+                   exit 1
+               fi
+
                cat <<EOF | sudo tee /etc/systemd/system/docker.service.d/tcp-port.conf
                [Service]
                ExecStart=
-               ExecStart=/usr/bin/dockerd -H fd:// -H tcp://127.0.0.1:5763
+               ExecStart=$DOCKERD_PATH -H fd:// -H tcp://127.0.0.1:5763
                EOF
 
                sudo systemctl daemon-reexec
