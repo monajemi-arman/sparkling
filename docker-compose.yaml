@@ -57,5 +57,3 @@ networks:
 
 volumes:
   db_data:
-volumes:
-  db_data:
