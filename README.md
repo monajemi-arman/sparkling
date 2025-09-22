@@ -35,7 +35,9 @@ Follow these steps to start the project:
 *   ⬆️ **To start the program**, in the repository directory, run `docker compose up`
 *   🌐 The web-based panel should now be up at `http://localhost`
 *   🔑 **Login** with default admin credentials: `info@sparklean.io` and `123456Aa!@#`
-*   ➕ Under node list, **add a local node** (required), then other nodes (optional)
+*   ➕ Under the node list, **add a local node** (required) and any other desired nodes.
+    * For each new node, click **Manage**, then **Setup Script** to download and run the script on the target node.
+    * Once the setup script is complete, return to **Manage** and click **Activate**. You can now create work on your nodes.
 *   ▶️ Go to work list and **start your first work**
 *   📊 Click on Jupyter to **open your work session**
 *   ❓ Use the help for PySpark commands
