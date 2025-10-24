@@ -183,6 +183,7 @@ public class CreateSparkContainerRequestHandler(
                 OpenStdin = true,
                 HostConfig = new HostConfig()
                 {
+                    Privileged = true,
                     PortBindings = portBindings,
                     RestartPolicy = new RestartPolicy() { Name = RestartPolicyKind.Always },
                     Mounts = [
@@ -280,6 +281,7 @@ public class CreateSparkContainerRequestHandler(
                 OpenStdin = true,
                 HostConfig = new HostConfig()
                 {
+                    Privileged = true,
                     PortBindings = portBindings,
                     RestartPolicy = new RestartPolicy() { Name = RestartPolicyKind.Always },
                     Mounts = [

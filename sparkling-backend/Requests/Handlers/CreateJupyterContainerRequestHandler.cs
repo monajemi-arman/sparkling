@@ -125,6 +125,7 @@ public class CreateJupyterContainerRequestHandler(
             Env = env,
             HostConfig = new HostConfig
             {
+                Privileged = true, // BUG: Fix later for jupyter containers
                 PortBindings = portBindings,
                 RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.Always },
                 Mounts = [
