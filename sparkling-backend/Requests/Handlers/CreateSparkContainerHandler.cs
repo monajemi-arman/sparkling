@@ -188,7 +188,19 @@ public class CreateSparkContainerRequestHandler(
                     Mounts = [
                         new Mount() { Type = "volume", Source = volumeName, Target = "/opt/spark" },
                         new Mount() { Type = "bind", Source = mountSourcePath, Target = "/shared-volume" }
-                    ]
+                    ],
+                    DeviceRequests = new List<DeviceRequest>
+                    {
+                        new DeviceRequest
+                        {
+                            Driver = "nvidia",
+                            Count = -1, // -1 = all GPUs
+                            Capabilities = new List<IList<string>>
+                            {
+                                new List<string> { "gpu" }
+                            }
+                        }
+                    }
                 },
                 ExposedPorts = exposedPorts
             }, cancellationToken);
@@ -273,7 +285,19 @@ public class CreateSparkContainerRequestHandler(
                     Mounts = [
                         new Mount() { Type = "volume", Source = volumeName, Target = "/opt/spark" },
                         new Mount() { Type = "bind", Source = mountSourcePath, Target = "/shared-volume" }
-                    ]
+                    ],
+                    DeviceRequests = new List<DeviceRequest>
+                    {
+                        new DeviceRequest
+                        {
+                            Driver = "nvidia",
+                            Count = -1, // -1 = all GPUs
+                            Capabilities = new List<IList<string>>
+                            {
+                                new List<string> { "gpu" }
+                            }
+                        }
+                    }
                 },
                 ExposedPorts = exposedPorts
             }, cancellationToken);

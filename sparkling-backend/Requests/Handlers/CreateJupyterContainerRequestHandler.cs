@@ -129,7 +129,19 @@ public class CreateJupyterContainerRequestHandler(
                 RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.Always },
                 Mounts = [
                     new Mount() { Type = "bind", Source = mountSourcePath, Target = "/shared-volume" }
-                ]
+                ],
+                DeviceRequests = new List<DeviceRequest>
+                {
+                    new DeviceRequest
+                    {
+                        Driver = "nvidia",
+                        Count = -1, // -1 = all GPUs
+                        Capabilities = new List<IList<string>>
+                        {
+                            new List<string> { "gpu" }
+                        }
+                    }
+                }
             },
             ExposedPorts = exposedPorts,
         }, cancellationToken);
