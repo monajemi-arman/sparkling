@@ -1,4 +1,54 @@
-FROM quay.io/jupyter/all-spark-notebook
+FROM python:3.11-slim
 
-COPY ./requirements.txt /
-RUN pip install -r /requirements.txt
+# ----------------------------------------------------------
+# System dependencies
+# ----------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash curl tini && \
+    rm -rf /var/lib/apt/lists/*
+
+# ----------------------------------------------------------
+# Create non-root user
+# ----------------------------------------------------------
+ARG NB_USER=john
+ARG NB_UID=1000
+ENV USER=${NB_USER}
+ENV HOME=/home/${NB_USER}
+RUN useradd -m -s /bin/bash -N -u ${NB_UID} ${NB_USER}
+
+# ----------------------------------------------------------
+# Install Jupyter Lab + your requirements
+# ----------------------------------------------------------
+RUN pip install --no-cache-dir \
+    jupyterlab notebook jupyter-server
+    
+COPY requirements.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements.txt \
+    && rm /tmp/requirements.txt
+
+# ----------------------------------------------------------
+# Jupyter configuration
+# ----------------------------------------------------------
+ENV JUPYTER_PORT=8888
+ENV JUPYTER_TOKEN=''
+ENV JUPYTER_PASSWORD=''
+ENV JUPYTER_ENABLE_LAB=yes
+ENV JUPYTER_ALLOW_ORIGIN='*'
+ENV JUPYTER_ALLOW_CREDENTIALS=yes
+ENV JUPYTER_ALLOW_ROOT=yes
+
+# ----------------------------------------------------------
+# Default working directory
+# ----------------------------------------------------------
+WORKDIR ${HOME}
+USER ${NB_USER}
+
+# ----------------------------------------------------------
+# Entrypoint
+# ----------------------------------------------------------
+ENTRYPOINT ["tini", "--"]
+
+# ----------------------------------------------------------
+# Launch command
+# ----------------------------------------------------------
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--no-browser"]
