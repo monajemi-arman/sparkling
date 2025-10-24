@@ -132,7 +132,7 @@ export function LoginForm({
                                 <div className="flex items-center">
                                     <Label htmlFor="password">Password</Label>
                                 </div>
-                                <Input id="password" type="password" required autoComplete="email" onChange={handleChangePassword}/>
+                                <Input id="password" type="password" required autoComplete="password" onChange={handleChangePassword}/>
                             </div>
                             <div className="flex flex-col gap-3">
                                 <Button type="submit" className="w-full">
