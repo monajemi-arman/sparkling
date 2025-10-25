@@ -33,14 +33,15 @@ RUN mkdir -p $SPARK_HOME/conf
 RUN echo "spark.worker.resource.gpu.amount           1" >> $SPARK_HOME/conf/spark-defaults.conf && \
     echo "spark.executor.resource.gpu.amount         1" >> $SPARK_HOME/conf/spark-defaults.conf && \
     echo "spark.task.resource.gpu.amount             1" >> $SPARK_HOME/conf/spark-defaults.conf && \
-    echo "spark.resources.discoveryScript            /opt/spark/getGpus.sh" >> $SPARK_HOME/conf/spark-defaults.conf
-
+    echo "spark.worker.resource.gpu.discoveryScript  /opt/spark/getGpusResources.sh" >> $SPARK_HOME/conf/spark-defaults.conf && \
+    echo "spark.executor.resource.gpu.discoveryScript /opt/spark/getGpusResources.sh" >> $SPARK_HOME/conf/spark-defaults.conf && \
+    echo "spark.resources.discoveryScript            /opt/spark/getGpusResources.sh" >> $SPARK_HOME/conf/spark-defaults.conf
+    
 # ----------------------------
 # Add GPU discovery script
 # ----------------------------
-RUN echo '#!/bin/bash' > /opt/spark/getGpus.sh && \
-    echo 'nvidia-smi -L | awk -F: '\''{print "name:" $1 "\naddresses:" NR-1}'\'' ' >> /opt/spark/getGpus.sh && \
-    chmod +x /opt/spark/getGpus.sh
+COPY getGpusResources.sh /opt/spark/getGpusResources.sh
+RUN chmod +x /opt/spark/getGpusResources.sh
 
 # ----------------------------
 # Default command (Spark Worker)
