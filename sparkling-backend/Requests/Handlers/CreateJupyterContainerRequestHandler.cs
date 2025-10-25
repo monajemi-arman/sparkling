@@ -144,6 +144,15 @@ public class CreateJupyterContainerRequestHandler(
                     }
                 }
             },
+            NetworkingConfig = new NetworkingConfig
+            {
+                EndpointsConfig = new Dictionary<string, EndpointSettings>
+                    {
+                        {
+                            "spark-net", new EndpointSettings()
+                        }
+                    }
+            },
             ExposedPorts = exposedPorts,
         }, cancellationToken);
         LogStep("Container creation request submitted");

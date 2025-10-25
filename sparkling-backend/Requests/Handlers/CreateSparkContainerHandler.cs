@@ -169,10 +169,22 @@ public class CreateSparkContainerRequestHandler(
 
         try
         {
+            // Create network if it doesn’t exist
+            var networks = await client.Networks.ListNetworksAsync();
+            if (!networks.Any(n => n.Name == "spark-net"))
+            {
+                await client.Networks.CreateNetworkAsync(new NetworksCreateParameters
+                {
+                    Name = "spark-net",
+                    Driver = "bridge" // Default driver
+                });
+            }
+            // Create container
             await client.Containers.CreateContainerAsync(new CreateContainerParameters()
             {
                 Image = _dockerImageSettings.Spark,
-                Name = containerId.ToString(),
+                // Name = containerId.ToString(),
+                Name = "spark-master",
                 Cmd =
                 [
                     "/bin/sh",
@@ -200,6 +212,15 @@ public class CreateSparkContainerRequestHandler(
                             {
                                 new List<string> { "gpu" }
                             }
+                        }
+                    }
+                },
+                NetworkingConfig = new NetworkingConfig
+                {
+                    EndpointsConfig = new Dictionary<string, EndpointSettings>
+                    {
+                        {
+                            "spark-net", new EndpointSettings()
                         }
                     }
                 },
@@ -266,6 +287,17 @@ public class CreateSparkContainerRequestHandler(
 
         try
         {
+            // Create network if it doesn’t exist
+            var networks = await client.Networks.ListNetworksAsync();
+            if (!networks.Any(n => n.Name == "spark-net"))
+            {
+                await client.Networks.CreateNetworkAsync(new NetworksCreateParameters
+                {
+                    Name = "spark-net",
+                    Driver = "bridge" // Default driver
+                });
+            }
+            // Create container
             await client.Containers.CreateContainerAsync(new CreateContainerParameters()
             {
                 Image = _dockerImageSettings.Spark,
@@ -298,6 +330,15 @@ public class CreateSparkContainerRequestHandler(
                             {
                                 new List<string> { "gpu" }
                             }
+                        }
+                    },
+                },
+                NetworkingConfig = new NetworkingConfig
+                {
+                    EndpointsConfig = new Dictionary<string, EndpointSettings>
+                    {
+                        {
+                            "spark-net", new EndpointSettings()
                         }
                     }
                 },
