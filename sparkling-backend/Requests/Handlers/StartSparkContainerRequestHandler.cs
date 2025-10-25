@@ -1,3 +1,4 @@
+using System;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using MediatR;
@@ -23,7 +24,9 @@ public class StartSparkContainerRequestHandler(IMediator mediator, ILogService l
 
         var spark =
             containers
-                .FirstOrDefault(container => container.Names.Any(name => name.Contains(databaseId.ToString())));
+                .FirstOrDefault(container => container.Names.Any(name =>
+                    name.Contains(databaseId.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                    name.Contains("spark-master", StringComparison.OrdinalIgnoreCase)));
 
         return spark?.ID;
     }
