@@ -43,3 +43,7 @@ Follow these steps to start the project:
 *   📊 Click on Jupyter to **open your work session**
 *   ❓ Use the help for PySpark commands
 *   🗑️ When done, **delete the work** (hours will be diminished from your account if you are not admin)
+
+## Maintating the Project
+The following are notes to take into consideration for collaborating or maintaining the project:
+* Python version of **spark-cuda** and **jupyter-custom** docker must be the same.
