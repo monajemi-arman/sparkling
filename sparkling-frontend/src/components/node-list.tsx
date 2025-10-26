@@ -193,6 +193,24 @@ export function NodeList(props: { nodeList: Node[] }) {
         return () => clearTimeout(timeout);
     }, [activationSteps]);
 
+    // helper to produce a spark ui url for a node address
+    const getSparkUrl = (address: string) => {
+        try {
+            const maybeWithScheme = address.match(/^https?:\/\//) ? address : `http://${address}`;
+            const url = new URL(maybeWithScheme);
+            // always target port 8080 for Spark UI
+            url.port = "8080";
+            // remove path/search/hash if present to keep root dashboard
+            url.pathname = "/";
+            url.search = "";
+            url.hash = "";
+            return url.toString();
+        } catch {
+            // fallback naive join
+            return `http://${address}:8080`;
+        }
+    }
+
     return (
         <>
             <Card id={'node-list'}>
@@ -303,16 +321,27 @@ export function NodeList(props: { nodeList: Node[] }) {
                                         </div>
                                     </CardContent>
                                     <CardFooter>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild><Button>Manage</Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onSelect={(e) => handleSetupNode(node.id, e)}>Setup Script</DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={(e) => handleActivateNode(node.id, e)}><a>Activate</a></DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={(e) => handleDeleteNode(node.id, e)} className="text-red-600">
-                                                    Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <div className="flex items-center gap-2">
+                                            {node.isLocal && (
+                                                <a
+                                                    href={getSparkUrl(node.address)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    <Button variant="outline">Spark</Button>
+                                                </a>
+                                            )}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button>Manage</Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={(e) => handleSetupNode(node.id, e)}>Setup Script</DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={(e) => handleActivateNode(node.id, e)}><a>Activate</a></DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={(e) => handleDeleteNode(node.id, e)} className="text-red-600">
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </CardFooter>
                                 </Card>
                             ))}

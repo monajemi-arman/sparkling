@@ -1,6 +1,6 @@
 # Help & Documentation
 ## Jupyter Spark
-* Use the following code in the embedded jupyter notebook to use Spark:
+* Use the following code in the embedded jupyter notebook to use Spark with GPU:
 ```python
 from pyspark.sql import SparkSession
 
