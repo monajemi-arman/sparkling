@@ -189,7 +189,7 @@ public class NodesController(
 
                # Setup SSH access for the 'sparkling' user
                sudo mkdir -p /home/sparkling/.ssh
-               echo "$PUBLIC_KEY" | sudo tee /home/sparkling/.ssh/authorized_keys > /dev/null
+               echo "$PUBLIC_KEY" | sudo tee -a /home/sparkling/.ssh/authorized_keys > /dev/null
                sudo chmod 600 /home/sparkling/.ssh/authorized_keys
                sudo chown -R sparkling:sparkling /home/sparkling/.ssh
 
@@ -201,7 +201,7 @@ public class NodesController(
                sudo chown -R sparkling:sparkling /etc/sparkling
 
                # Write node configuration
-               cat << EOF | sudo tee /etc/sparkling/config.json
+               cat << EOF | sudo tee -a /etc/sparkling/config.json
                {
                  "id": "${NODE_ID}",
                  "name": "${NODE_NAME}",
