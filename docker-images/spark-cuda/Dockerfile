@@ -4,7 +4,7 @@ FROM nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04
 # Install dependencies
 # ----------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk scala wget python3 python3-pip curl bash && \
+    openjdk-17-jdk scala wget python3.12 python3-pip curl bash && \
     rm -rf /var/lib/apt/lists/*
 
 # ----------------------------
