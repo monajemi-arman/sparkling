@@ -22,12 +22,19 @@ public class StartSparkContainerRequestHandler(IMediator mediator, ILogService l
             All = true
         }, cancellationToken);
 
-        var spark =
-            containers
-                .FirstOrDefault(container => container.Names.Any(name =>
-                    name.Contains(databaseId.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                    name.Contains("spark-master", StringComparison.OrdinalIgnoreCase)));
+        // First, try to find a container matching the databaseId
+        var spark = containers.FirstOrDefault(container =>
+            container.Names.Any(name =>
+                name.Contains(databaseId.ToString(), StringComparison.OrdinalIgnoreCase)));
 
+        // If not found, fallback to searching for spark-master
+        if (spark is null)
+        {
+            spark = containers.FirstOrDefault(container =>
+                container.Names.Any(name =>
+                    name.Contains("spark-master", StringComparison.OrdinalIgnoreCase)));
+        }
+        
         return spark?.ID;
     }
 
@@ -172,7 +179,8 @@ public class StartSparkContainerRequestHandler(IMediator mediator, ILogService l
                             {
                                 request.Node.Containers?.Remove(maybeSparkContainer);
                                 logger.LogInformation("Removed container {DbContainerId} from database.", maybeSparkContainer.Id);
-                            } catch (Exception exInner)
+                            }
+                            catch (Exception exInner)
                             {
                                 logger.LogWarning(exInner, "Ignored error removing container {DbContainerId} from database.", maybeSparkContainer.Id);
                             }
