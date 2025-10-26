@@ -29,38 +29,66 @@ public class GetDockerClientRequestHandler : IRequestHandler<GetDockerClientRequ
             var randomPort = (uint)Random.Shared.NextInt64(1024, 65535);
 
             _logger.LogInformation("Setting up SSH port forwarding: Local 127.0.0.1:{RandomPort} -> Remote 127.0.0.1:5763", randomPort);
-            client.AddForwardedPort(new ForwardedPortLocal("127.0.0.1", randomPort, "127.0.0.1", 5763));
 
             try
             {
+                // Connect first, then add/start forwarded port
                 await client.ConnectAsync(cancellationToken);
                 _logger.LogInformation("SSH client connected successfully to {NodeAddress}", request.Node.Address);
+
+                ForwardedPortLocal forwardedPort = new ForwardedPortLocal("127.0.0.1", randomPort, "127.0.0.1", 5763);
+                client.AddForwardedPort(forwardedPort);
+
+                try
+                {
+                    forwardedPort.Start();
+                    _logger.LogInformation("SSH port forwarding started: localhost:{LocalPort} -> {RemoteHost}:{RemotePort}", randomPort, "127.0.0.1", 5763);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to start forwarded port after SSH connect. Disposing SSH client.");
+                    // Ensure cleanup when start fails
+                    try { forwardedPort.Stop(); } catch { /* ignore */ }
+                    client.Dispose();
+                    throw;
+                }
+
+                IDockerClient dockerClient;
+                var dockerUri = new Uri($"http://localhost:{randomPort}");
+                _logger.LogInformation("Creating Docker client for remote node using URI: {DockerUri}", dockerUri);
+                try
+                {
+                    dockerClient = new DockerClientConfiguration(dockerUri).CreateClient();
+                    _logger.LogInformation("Docker client created successfully for remote node.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to create Docker client for remote node using URI: {DockerUri}. Check if Docker daemon is accessible via SSH tunnel.", dockerUri);
+                    // Stop forwarded port and dispose client before rethrowing
+                    try { forwardedPort.Stop(); } catch { /* ignore */ }
+                    client.Dispose();
+                    throw;
+                }
+
+                return (dockerClient, () =>
+                {
+                    _logger.LogInformation("Stopping SSH port forwarding and disposing SSH client for remote node.");
+                    try
+                    {
+                        forwardedPort.Stop();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error while stopping forwarded port.");
+                    }
+                    client.Dispose();
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to connect SSH client to {NodeAddress}. Ensure SSH server is running and credentials are correct.", request.Node.Address);
                 throw; // Re-throw to propagate the error
             }
-
-            IDockerClient dockerClient;
-            var dockerUri = new Uri($"http://localhost:{randomPort}");
-            _logger.LogInformation("Creating Docker client for remote node using URI: {DockerUri}", dockerUri);
-            try
-            {
-                dockerClient = new DockerClientConfiguration(dockerUri).CreateClient();
-                _logger.LogInformation("Docker client created successfully for remote node.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to create Docker client for remote node using URI: {DockerUri}. Check if Docker daemon is accessible via SSH tunnel.", dockerUri);
-                throw;
-            }
-
-            return (dockerClient, () =>
-            {
-                _logger.LogInformation("Disposing SSH client for remote node.");
-                client.Dispose();
-            });
         }
         else
         {

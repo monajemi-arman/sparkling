@@ -258,6 +258,12 @@ public class CreateSparkContainerRequestHandler(
         }
         logger.LogInformation("Local master node found: {MasterNodeAddress}", localMasterNode.Address);
 
+        // If the master address points to localhost (127.0.0.1), use the Docker network name "spark-master"
+        // so that worker containers can resolve it when running inside Docker.
+        var masterAddress = localMasterNode.Address != null && localMasterNode.Address.Contains("127.0.0.1")
+            ? "spark-master"
+            : localMasterNode.Address;
+
         var containerId = Guid.NewGuid();
         logger.LogInformation("Configuring Worker Node container parameters for ID: {ContainerId}", containerId);
 
@@ -307,7 +313,7 @@ public class CreateSparkContainerRequestHandler(
                     "/bin/sh",
                     "-c",
                     //FIXME: SECURITY: ensure that the localMasterNode.Address is sanitized and safe to use
-                    $"/opt/spark/sbin/start-worker.sh {localMasterNode.Address}:7077 ; /bin/sh",
+                    $"/opt/spark/sbin/start-worker.sh {masterAddress}:7077 ; /bin/sh",
                 ],
                 Tty = true,
                 OpenStdin = true,

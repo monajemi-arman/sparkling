@@ -15,7 +15,7 @@ namespace Sparkling.Backend.Requests.Handlers;
 public class StartSparkContainerRequestHandler(IMediator mediator, ILogService logService, ILogger<StartSparkContainerRequestHandler> logger) : IRequestHandler<StartSparkContainerRequest>
 {
     private static async Task<string?> GetContainerIdByDatabaseId(IDockerClient client, Guid databaseId,
-        CancellationToken cancellationToken)
+        bool allowMasterFallback = true, CancellationToken cancellationToken = default)
     {
         var containers = await client.Containers.ListContainersAsync(new ContainersListParameters()
         {
@@ -28,7 +28,7 @@ public class StartSparkContainerRequestHandler(IMediator mediator, ILogService l
                 name.Contains(databaseId.ToString(), StringComparison.OrdinalIgnoreCase)));
 
         // If not found, fallback to searching for spark-master
-        if (spark is null)
+        if (spark is null && allowMasterFallback)
         {
             spark = containers.FirstOrDefault(container =>
                 container.Names.Any(name =>
@@ -65,29 +65,32 @@ public class StartSparkContainerRequestHandler(IMediator mediator, ILogService l
 
             await pipeline.ExecuteAsync(async token =>
             {
-                var (client, cleanup) =
-                    await mediator.Send(new GetDockerClientRequest() { Node = request.Node }, token);
-                try
-                {
-                    if (maybeSparkContainer is not null)
-                    {
-                        logger.LogInformation("Existing Spark container found in DB for Node ID: {NodeId}. Attempting to find in Docker.", request.Node.Id);
-                        string? containerId = null;
-                        try
-                        {
-                            containerId = await GetContainerIdByDatabaseId(client, maybeSparkContainer.Id, token);
-                        }
-                        catch (DockerApiException daEx)
-                        {
-                            logger.LogError(daEx, "Docker API Exception when listing containers to find existing Spark container for Node ID: {NodeId}. Status: {StatusCode}, Response: {Response}",
-                                request.Node.Id, daEx.StatusCode, daEx.ResponseBody);
-                            throw; // Re-throw to trigger retry or propagate
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogError(ex, "An unexpected error occurred when listing containers to find existing Spark container for Node ID: {NodeId}.", request.Node.Id);
-                            throw; // Re-throw to trigger retry or propagate
-                        }
+                var dockerClientResult = await mediator.Send(new GetDockerClientRequest() { Node = request.Node }, token);
+                // Explicitly extract tuple elements to avoid implicitly-typed deconstruction errors
+                var client = (IDockerClient)dockerClientResult.Item1;
+                var cleanup = (Action)dockerClientResult.Item2;
+                 try
+                 {
+                     if (maybeSparkContainer is not null)
+                     {
+                         logger.LogInformation("Existing Spark container found in DB for Node ID: {NodeId}. Attempting to find in Docker.", request.Node.Id);
+                         string? containerId = null;
+                         try
+                         {
+                            // Only allow falling back to "spark-master" when this node is local.
+                            containerId = await GetContainerIdByDatabaseId(client, maybeSparkContainer.Id, allowMasterFallback: request.Node.IsLocal, cancellationToken: token);
+                         }
+                         catch (DockerApiException daEx)
+                         {
+                             logger.LogError(daEx, "Docker API Exception when listing containers to find existing Spark container for Node ID: {NodeId}. Status: {StatusCode}, Response: {Response}",
+                                 request.Node.Id, daEx.StatusCode, daEx.ResponseBody);
+                             throw; // Re-throw to trigger retry or propagate
+                         }
+                         catch (Exception ex)
+                         {
+                             logger.LogError(ex, "An unexpected error occurred when listing containers to find existing Spark container for Node ID: {NodeId}.", request.Node.Id);
+                             throw; // Re-throw to trigger retry or propagate
+                         }
 
 
                         if (containerId is not null)
@@ -201,8 +204,9 @@ public class StartSparkContainerRequestHandler(IMediator mediator, ILogService l
                     string? dockerContainerId = null;
                     try
                     {
+                        // Do not fallback to spark-master when resolving the newly created container.
                         dockerContainerId =
-                            await GetContainerIdByDatabaseId(client, container.Id, token);
+                            await GetContainerIdByDatabaseId(client, container.Id, allowMasterFallback: false, cancellationToken: token);
                     }
                     catch (DockerApiException daEx)
                     {
