@@ -2,3 +2,5 @@ pyspark
 torch
 torchvision
 torchaudio
+pyarrow
+pandas
