@@ -99,7 +99,7 @@ public class CreateSparkContainerRequestHandler(
             else
             {
                 logger.LogInformation("Creating Worker Spark Node container for Node ID: {NodeId}", request.Node.Id);
-                containerId = await CreateWorkerNode(client, volumeName, cancellationToken);
+                containerId = await CreateWorkerNode(client, request.Node.Address, volumeName, cancellationToken);
             }
 
 
@@ -244,7 +244,7 @@ public class CreateSparkContainerRequestHandler(
         return containerId;
     }
 
-    private async Task<Guid> CreateWorkerNode(IDockerClient client, string volumeName,
+    private async Task<Guid> CreateWorkerNode(IDockerClient client, string address, string volumeName,
         CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Attempting to find local master node for Worker Node creation.");
@@ -315,6 +315,13 @@ public class CreateSparkContainerRequestHandler(
                     //FIXME: SECURITY: ensure that the localMasterNode.Address is sanitized and safe to use
                     $"/opt/spark/sbin/start-worker.sh {masterAddress}:7077 ; /bin/sh",
                 ],
+                Env = new List<string>
+                {
+                    $"SPARK_LOCAL_IP={address}",
+                    $"PUBLIC_HOSTNAME={address}",
+                    $"SPARK_LOCAL_HOSTNAME={address}",
+                    $"SPARK_IDENT_STRING={address}"
+                },
                 Tty = true,
                 OpenStdin = true,
                 HostConfig = new HostConfig()
@@ -324,7 +331,7 @@ public class CreateSparkContainerRequestHandler(
                     RestartPolicy = new RestartPolicy() { Name = RestartPolicyKind.Always },
                     Mounts = [
                         new Mount() { Type = "volume", Source = volumeName, Target = "/opt/spark" },
-                        new Mount() { Type = "bind", Source = mountSourcePath, Target = "/shared-volume" }
+                        // new Mount() { Type = "bind", Source = mountSourcePath, Target = "/shared-volume" }
                     ],
                     DeviceRequests = new List<DeviceRequest>
                     {
