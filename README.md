@@ -54,3 +54,9 @@ The following are notes to take into consideration for collaborating or maintain
 ```bash
 docker stop spark-master && docker rm spark-master
 ```
+
+## Security Bugs
+If you care to run this infrastructure in production environment, you are highly advised against doing so.  
+For starters, master address is vulnerable to **remote command execution**, but you would need admin access to the panel.  
+When running this software, you will have to open up your docker API on a tcp port which exposes it to whoever has localhost access, possibly causing **escalation** exploits.
+If in the future I fix these bugs, I will modify this README. I may even re-write the backend with Rust as a project.
