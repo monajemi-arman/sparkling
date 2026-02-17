@@ -115,7 +115,7 @@ public class CreateSparkContainerRequestHandler(
                 ImageName = _dockerImageSettings.SparkImageName,
                 //TODO: put the latest SHA tag here
                 ImageTag = _dockerImageSettings.SparkImageTag,
-                Ports = request.Node.IsLocal ? "7077,8080" : "8081",
+                Ports = request.Node.IsLocal ? "7076,8080" : "8081",
                 Volumes = volumeName,
                 Type = ContainerType.SparkNode,
                 NodeId = request.Node.Id
@@ -141,11 +141,11 @@ public class CreateSparkContainerRequestHandler(
         logger.LogInformation("Configuring Master Node container parameters for ID: {ContainerId}", containerId);
 
         Dictionary<string, IList<PortBinding>> portBindings = [];
-        portBindings.Add("7077/tcp", new List<PortBinding>() { new() { HostPort = "7077" } });
+        portBindings.Add("7076/tcp", new List<PortBinding>() { new() { HostPort = "7076" } });
         portBindings.Add("8080/tcp", new List<PortBinding>() { new() { HostPort = "8080" } });
 
         Dictionary<string, EmptyStruct> exposedPorts = [];
-        exposedPorts.Add("7077/tcp", new EmptyStruct());
+        exposedPorts.Add("7076/tcp", new EmptyStruct());
         exposedPorts.Add("8080/tcp", new EmptyStruct());
 
         // Construct the absolute path for the shared volume
@@ -189,7 +189,7 @@ public class CreateSparkContainerRequestHandler(
                 [
                     "/bin/sh",
                     "-c",
-                    "/opt/spark/sbin/start-master.sh -p 7077 ; /bin/sh",
+                    "/opt/spark/sbin/start-master.sh -p 7076 ; /bin/sh",
                 ],
                 Tty = true,
                 OpenStdin = true,
@@ -313,7 +313,7 @@ public class CreateSparkContainerRequestHandler(
                     "/bin/sh",
                     "-c",
                     //FIXME: SECURITY: ensure that the localMasterNode.Address is sanitized and safe to use
-                    $"/opt/spark/sbin/start-worker.sh {masterAddress}:7077 ; /bin/sh",
+                    $"/opt/spark/sbin/start-worker.sh {masterAddress}:7076 ; /bin/sh",
                 ],
                 Env = new List<string>
                 {
@@ -327,6 +327,7 @@ public class CreateSparkContainerRequestHandler(
                 HostConfig = new HostConfig()
                 {
                     Privileged = true,
+                    NetworkMode = "host",
                     PortBindings = portBindings,
                     RestartPolicy = new RestartPolicy() { Name = RestartPolicyKind.Always },
                     Mounts = [
@@ -346,15 +347,15 @@ public class CreateSparkContainerRequestHandler(
                         }
                     },
                 },
-                NetworkingConfig = new NetworkingConfig
-                {
-                    EndpointsConfig = new Dictionary<string, EndpointSettings>
-                    {
-                        {
-                            "spark-net", new EndpointSettings()
-                        }
-                    }
-                },
+                // NetworkingConfig = new NetworkingConfig
+                // {
+                //     EndpointsConfig = new Dictionary<string, EndpointSettings>
+                //     {
+                //         {
+                //             "spark-net", new EndpointSettings()
+                //         }
+                //     }
+                // },
                 ExposedPorts = exposedPorts
             }, cancellationToken);
             logger.LogInformation("Worker Node container ID {ContainerId} created successfully.", containerId);
