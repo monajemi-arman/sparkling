@@ -16,7 +16,8 @@ Sparkling is an easy-to-use Apache Spark setup and management platform. Written 
 ```bash
 curl -fsSL https://get.docker.com | sh
 ```
-Then, install and enable the SSH service:
+* Nvidia container toolkit must be installed using official guide at: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
+* Finally, install and enable the SSH service:
 ```bash
 sudo apt update
 sudo apt install -y openssh-server
@@ -47,3 +48,9 @@ Follow these steps to start the project:
 ## Maintating the Project
 The following are notes to take into consideration for collaborating or maintaining the project:
 * Python version of **spark-cuda** and **jupyter-custom** docker must be the same.
+
+## Known Issues
+* After creating a master node for the first time, if you want to create it a second time, you get an error unless you manually stop and remove the spark-master container on the master node before re-activating:
+```bash
+docker stop spark-master && docker rm spark-master
+```
