@@ -126,7 +126,7 @@ public class CreateJupyterContainerRequestHandler(
             HostConfig = new HostConfig
             {
                 Privileged = true, // BUG: Fix later for jupyter containers
-                PortBindings = portBindings,
+                NetworkMode = "host",
                 RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.Always },
                 Mounts = [
                     new Mount() { Type = "bind", Source = mountSourcePath, Target = "/shared-volume" }
@@ -144,15 +144,15 @@ public class CreateJupyterContainerRequestHandler(
                     }
                 }
             },
-            NetworkingConfig = new NetworkingConfig
-            {
-                EndpointsConfig = new Dictionary<string, EndpointSettings>
-                    {
-                        {
-                            "spark-net", new EndpointSettings()
-                        }
-                    }
-            },
+            // NetworkingConfig = new NetworkingConfig
+            // {
+            //     EndpointsConfig = new Dictionary<string, EndpointSettings>
+            //         {
+            //             {
+            //                 "spark-net", new EndpointSettings()
+            //             }
+            //         }
+            // },
             ExposedPorts = exposedPorts,
         }, cancellationToken);
         LogStep("Container creation request submitted");
@@ -178,36 +178,36 @@ public class CreateJupyterContainerRequestHandler(
 
         LogStep($"Container {dockerContainer.ID} started successfully");
 
-        // Poll the Docker API until the port mapping appears (or timeout)
-        LogStep($"Retrieving port mapping for container {dockerContainer.ID}");
-        ContainerInspectResponse inspectResponse = null;
-        const int maxAttempts = 10;
-        const int delayMs = 10000;
+        // // Poll the Docker API until the port mapping appears (or timeout)
+        // LogStep($"Retrieving port mapping for container {dockerContainer.ID}");
+        // ContainerInspectResponse inspectResponse = null;
+        // const int maxAttempts = 10;
+        // const int delayMs = 10000;
 
-        for (var attempt = 1; attempt <= maxAttempts; attempt++)
-        {
-            inspectResponse = await client.Containers
-                .InspectContainerAsync(dockerContainer.ID, cancellationToken);
+        // for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        // {
+        //     inspectResponse = await client.Containers
+        //         .InspectContainerAsync(dockerContainer.ID, cancellationToken);
 
-            if (inspectResponse.NetworkSettings.Ports.TryGetValue(portStr, out var bindings)
-                && bindings != null && bindings.Count > 0)
-            {
-                LogStep($"Port mapping found: host port {bindings.First().HostPort}");
-                break;
-            }
+        //     if (inspectResponse.NetworkSettings.Ports.TryGetValue(portStr, out var bindings)
+        //         && bindings != null && bindings.Count > 0)
+        //     {
+        //         LogStep($"Port mapping found: host port {bindings.First().HostPort}");
+        //         break;
+        //     }
 
-            LogStep($"Port mapping not yet available (attempt {attempt}/{maxAttempts}), waiting {delayMs}ms");
-            await Task.Delay(delayMs, cancellationToken);
-        }
+        //     LogStep($"Port mapping not yet available (attempt {attempt}/{maxAttempts}), waiting {delayMs}ms");
+        //     await Task.Delay(delayMs, cancellationToken);
+        // }
 
-        if (inspectResponse?.NetworkSettings.Ports.TryGetValue(portStr, out var finalBindings) != true
-            || finalBindings.Count == 0)
-        {
-            throw new InvalidOperationException(
-                $"Failed to retrieve port mapping for container {dockerContainer.ID}");
-        }
+        // if (inspectResponse?.NetworkSettings.Ports.TryGetValue(portStr, out var finalBindings) != true
+        //     || finalBindings.Count == 0)
+        // {
+        //     throw new InvalidOperationException(
+        //         $"Failed to retrieve port mapping for container {dockerContainer.ID}");
+        // }
 
-        var hostPort = finalBindings.First().HostPort;
+        // var hostPort = finalBindings.First().HostPort;
 
         return new Container
         {
@@ -215,7 +215,7 @@ public class CreateJupyterContainerRequestHandler(
             Id = containerId,
             ImageName = image,
             ImageTag = tag,
-            Ports = hostPort,
+            Ports = jupyterPort.ToString(),
             Type = ContainerType.JupyterNotebook,
             Volumes = "",
             NodeId = node.Id,
